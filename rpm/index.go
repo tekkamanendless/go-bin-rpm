@@ -14,9 +14,9 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/mattn/go-zglob"
-	"github.com/mh-cbon/go-bin-rpm/stringexec"
 	"github.com/mh-cbon/verbose"
 	"github.com/pkg/errors"
+	"github.com/tekkamanendless/go-bin-rpm/stringexec"
 )
 
 var logger = verbose.Auto()
@@ -50,10 +50,14 @@ type Package struct {
 }
 
 type fileInstruction struct {
-	From string `json:"from, omitempty"`
-	To   string `json:"to, omitempty"`
-	Base string `json:"base, omitempty"`
-	Type string `json:"type, omitempty"`
+	From   string  `json:"from,omitempty"`
+	To     string  `json:"to,omitempty"`
+	Base   string  `json:"base,omitempty"`
+	Type   string  `json:"type,omitempty"`
+	Config *string `json:"config,omitempty"`
+	FPerm  string  `json:"fperm"`
+	FUser  string  `json:"fuser"`
+	FGroup string  `json:"fgroup"`
 }
 
 type menu struct {
@@ -458,7 +462,31 @@ func (p *Package) GenerateFilesSection(sourceDir string) (string, error) {
 		to := fileInst.To
 		base := fileInst.Base
 		ftype := fileInst.Type
+		config := ""
+		attr := ""
 
+		if fileInst.Config != nil {
+			if *fileInst.Config == "" {
+				config = "%config "
+			} else {
+				config = "%config(" + *fileInst.Config + ") "
+			}
+		}
+		if fileInst.FPerm != "" || fileInst.FUser != "" || fileInst.FGroup != "" {
+			fperm := "0644"
+			if fileInst.FPerm != "" {
+				fperm = fileInst.FPerm
+			}
+			fuser := "root"
+			if fileInst.FUser != "" {
+				fuser = fileInst.FUser
+			}
+			fgroup := "root"
+			if fileInst.FGroup != "" {
+				fgroup = fileInst.FGroup
+			}
+			attr = "%attr(" + fperm + ", " + fuser + ", " + fgroup + ") "
+		}
 		if ftype != "" {
 			ftype = " " + ftype
 		}
@@ -495,13 +523,13 @@ func (p *Package) GenerateFilesSection(sourceDir string) (string, error) {
 			}
 			n = filepath.Join(to, n)
 			if fileItems(allItems).contains(n) == false {
-				allItems = append(allItems, fileItem{n, ftype})
+				allItems = append(allItems, fileItem{Path: n, Type: ftype, Config: config, Attr: attr})
 			}
 		}
 	}
 
 	for _, item := range allItems {
-		content += fmt.Sprintf("%s%s\n", item.Type, item.Path)
+		content += fmt.Sprintf("%s%s%s%s\n", item.Config, item.Attr, item.Type, item.Path)
 	}
 
 	logger.Printf("content=\n%s\n", content)
@@ -651,8 +679,10 @@ func (p *Package) WriteEnvFile() (string, error) {
 }
 
 type fileItem struct {
-	Path string
-	Type string
+	Path   string
+	Type   string
+	Config string
+	Attr   string
 }
 
 type fileItems []fileItem

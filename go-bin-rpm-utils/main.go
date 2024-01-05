@@ -9,11 +9,7 @@ import (
 
 func main() {
 
-	defer fmt.Println(`
-
-You are using a deprecated script. please update your build with latest changes on go-github-release
-
-`)
+	defer fmt.Println(`You are using a deprecated script. please update your build with latest changes on go-github-release`)
 
 	flag.Parse()
 	action := flag.Arg(0)

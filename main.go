@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mh-cbon/go-bin-rpm/rpm"
 	"github.com/mh-cbon/verbose"
+	"github.com/tekkamanendless/go-bin-rpm/rpm"
 	"github.com/urfave/cli"
 )
 
